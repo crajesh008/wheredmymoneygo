@@ -32,30 +32,60 @@ const Auth = () => {
 
     try {
       if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
-        if (error) throw error;
-        toast({ title: "Welcome back! 💚", description: "Logged in successfully" });
-        navigate('/');
+        
+        if (error) {
+          // Handle specific error cases with user-friendly messages
+          if (error.message.includes('Invalid login credentials')) {
+            throw new Error('Invalid email or password. Please check your credentials and try again.');
+          } else if (error.message.includes('Email not confirmed')) {
+            throw new Error('Please confirm your email address before logging in.');
+          } else {
+            throw error;
+          }
+        }
+
+        if (data.session) {
+          toast({ title: "Welcome back! 💚", description: "Logged in successfully" });
+          navigate('/');
+        }
       } else {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
             emailRedirectTo: `${window.location.origin}/`
           }
         });
-        if (error) throw error;
-        setShowInstructions(true);
-        toast({ title: "Account created! 🎉", description: "You're all set to start tracking" });
-        setTimeout(() => navigate('/'), 3000);
+        
+        if (error) {
+          // Handle signup-specific errors
+          if (error.message.includes('already registered')) {
+            throw new Error('This email is already registered. Try logging in instead.');
+          } else if (error.message.includes('Password should be')) {
+            throw new Error('Password must be at least 6 characters long.');
+          } else {
+            throw error;
+          }
+        }
+
+        if (data.user) {
+          setShowInstructions(true);
+          toast({ 
+            title: "Account created! 🎉", 
+            description: "You can now log in and start tracking your expenses"
+          });
+          setTimeout(() => navigate('/'), 3000);
+        }
       }
     } catch (error: any) {
+      console.error('Auth error:', error);
       toast({
-        title: "Error",
-        description: error.message,
+        title: isLogin ? "Login Failed" : "Sign Up Failed",
+        description: error.message || "An unexpected error occurred. Please try again.",
         variant: "destructive"
       });
     } finally {
