@@ -14,12 +14,14 @@ import { Card } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Expense } from '@/hooks/useExpenses';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, Upload, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
 interface ExpenseFormProps {
-  onSubmit: (expense: Omit<Expense, 'id' | 'timestamp'>) => void;
+  onSubmit: (expense: Omit<Expense, 'id' | 'timestamp'> & { receipt_url?: string }) => void;
 }
 
 export const ExpenseForm = ({ onSubmit }: ExpenseFormProps) => {
@@ -28,11 +30,52 @@ export const ExpenseForm = ({ onSubmit }: ExpenseFormProps) => {
   const [mood, setMood] = useState<Expense['mood']>('Neutral');
   const [note, setNote] = useState('');
   const [date, setDate] = useState<Date>(new Date());
+  const [receipt, setReceipt] = useState<File | null>(null);
+  const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleReceiptChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast({ title: "File too large", description: "Max size is 5MB", variant: "destructive" });
+        return;
+      }
+      setReceipt(file);
+      setReceiptPreview(URL.createObjectURL(file));
+    }
+  };
+
+  const uploadReceipt = async (): Promise<string | null> => {
+    if (!receipt) return null;
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const fileExt = receipt.name.split('.').pop();
+    const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+    const { error } = await supabase.storage
+      .from('receipts')
+      .upload(fileName, receipt);
+
+    if (error) {
+      console.error('Upload error:', error);
+      toast({ title: "Upload failed", variant: "destructive" });
+      return null;
+    }
+
+    const { data } = supabase.storage.from('receipts').getPublicUrl(fileName);
+    return data.publicUrl;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!amount || isNaN(Number(amount))) return;
+
+    setIsUploading(true);
+    const receipt_url = await uploadReceipt();
 
     onSubmit({
       amount: Number(amount),
@@ -40,11 +83,15 @@ export const ExpenseForm = ({ onSubmit }: ExpenseFormProps) => {
       mood,
       note,
       date: date.toISOString(),
+      receipt_url: receipt_url || undefined
     });
 
     setAmount('');
     setNote('');
     setDate(new Date());
+    setReceipt(null);
+    setReceiptPreview(null);
+    setIsUploading(false);
   };
 
   return (
@@ -134,8 +181,49 @@ export const ExpenseForm = ({ onSubmit }: ExpenseFormProps) => {
           />
         </div>
 
-        <Button type="submit" className="w-full bg-gradient-mint text-lg py-6">
-          Add Expense
+        <div>
+          <Label htmlFor="receipt">Receipt (optional)</Label>
+          <div className="space-y-2">
+            {receiptPreview ? (
+              <div className="relative border border-border rounded-lg p-2">
+                <img src={receiptPreview} alt="Receipt preview" className="max-h-32 rounded" />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute top-1 right-1"
+                  onClick={() => {
+                    setReceipt(null);
+                    setReceiptPreview(null);
+                  }}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            ) : (
+              <div className="border-2 border-dashed border-border rounded-lg p-4 text-center">
+                <input
+                  id="receipt"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleReceiptChange}
+                  className="hidden"
+                />
+                <Label htmlFor="receipt" className="cursor-pointer">
+                  <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">Click to upload receipt</span>
+                </Label>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <Button 
+          type="submit" 
+          className="w-full bg-gradient-mint text-lg py-6"
+          disabled={isUploading}
+        >
+          {isUploading ? 'Uploading...' : 'Add Expense'}
         </Button>
       </form>
     </Card>

@@ -1,7 +1,7 @@
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Expense } from '@/hooks/useExpenses';
-import { Trash2, Edit } from 'lucide-react';
+import { Trash2, Edit, Receipt } from 'lucide-react';
 import { useState } from 'react';
 import {
   Dialog,
@@ -19,6 +19,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 
 interface ExpenseListProps {
   expenses: Expense[];
@@ -111,6 +116,22 @@ export const ExpenseList = ({ expenses, onDelete, onUpdate }: ExpenseListProps) 
                 </p>
               </div>
               <div className="flex gap-2">
+                {expense.receipt_url && (
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="ghost" size="icon">
+                        <Receipt className="w-4 h-4" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-2">
+                      <img 
+                        src={expense.receipt_url} 
+                        alt="Receipt" 
+                        className="max-w-sm max-h-96 rounded"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                )}
                 <Button
                   variant="ghost"
                   size="icon"

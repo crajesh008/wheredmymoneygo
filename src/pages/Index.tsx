@@ -3,13 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useExpenses } from '@/hooks/useExpenses';
 import { useBudget } from '@/hooks/useBudget';
+import { CategoryBudgets } from '@/hooks/useBudget';
 import { ExpenseForm } from '@/components/ExpenseForm';
 import { SummaryCards } from '@/components/SummaryCards';
 import { SpendingCharts } from '@/components/SpendingCharts';
+import { SpendingTrends } from '@/components/SpendingTrends';
 import { InsightsPanel } from '@/components/InsightsPanel';
 import { BudgetTracker } from '@/components/BudgetTracker';
 import { ExpenseList } from '@/components/ExpenseList';
 import { MotivationBanner } from '@/components/MotivationBanner';
+import { RecurringExpensesDialog } from '@/components/RecurringExpensesDialog';
 import { toast } from '@/hooks/use-toast';
 import { Wallet, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -19,6 +22,40 @@ const Index = () => {
   const { expenses, addExpense, deleteExpense, updateExpense } = useExpenses();
   const { monthlyBudget, categoryBudgets, updateBudget, updateCategoryBudgets } = useBudget();
   const [showInsight, setShowInsight] = useState(false);
+
+  useEffect(() => {
+    checkBudgetAlerts();
+  }, [expenses, categoryBudgets]);
+
+  const checkBudgetAlerts = () => {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthExpenses = expenses.filter((exp) => new Date(exp.date) >= startOfMonth);
+    
+    const categoryTotals = monthExpenses.reduce((acc, exp) => {
+      acc[exp.category] = (acc[exp.category] || 0) + exp.amount;
+      return acc;
+    }, {} as Record<string, number>);
+
+    Object.entries(categoryTotals).forEach(([category, spent]) => {
+      const budget = categoryBudgets[category as keyof CategoryBudgets];
+      if (budget > 0) {
+        const percent = (spent / budget) * 100;
+        if (percent >= 100 && percent < 105) {
+          toast({
+            title: `⚠️ ${category} Budget Exceeded!`,
+            description: `You've spent $${spent.toFixed(2)} of $${budget.toFixed(2)}`,
+            variant: "destructive"
+          });
+        } else if (percent >= 80 && percent < 85) {
+          toast({
+            title: `⚡ ${category} Budget Alert`,
+            description: `You've used ${percent.toFixed(0)}% of your ${category} budget`,
+          });
+        }
+      }
+    });
+  };
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -69,10 +106,13 @@ const Index = () => {
                 <p className="text-sm text-muted-foreground">Track mindfully, spend wisely 🌱</p>
               </div>
             </div>
-            <Button variant="ghost" size="sm" onClick={handleLogout}>
-              <LogOut className="w-4 h-4 mr-2" />
-              Logout
-            </Button>
+            <div className="flex items-center gap-2">
+              <RecurringExpensesDialog />
+              <Button variant="ghost" size="sm" onClick={handleLogout}>
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+              </Button>
+            </div>
           </div>
         </div>
       </header>
@@ -111,6 +151,7 @@ const Index = () => {
             {!showInsight && expenses.length > 0 && (
               <InsightsPanel expenses={expenses} />
             )}
+            <SpendingTrends expenses={expenses} />
             <SpendingCharts expenses={expenses} />
             <ExpenseList 
               expenses={expenses} 

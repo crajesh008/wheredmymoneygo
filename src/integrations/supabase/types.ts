@@ -47,6 +47,7 @@ export type Database = {
           id: string
           mood: string
           note: string | null
+          receipt_url: string | null
           timestamp: number
           user_id: string
         }
@@ -58,6 +59,7 @@ export type Database = {
           id?: string
           mood: string
           note?: string | null
+          receipt_url?: string | null
           timestamp: number
           user_id: string
         }
@@ -69,7 +71,50 @@ export type Database = {
           id?: string
           mood?: string
           note?: string | null
+          receipt_url?: string | null
           timestamp?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      recurring_expenses: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          frequency: string
+          id: string
+          is_active: boolean
+          next_date: string
+          note: string | null
+          start_date: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          category: string
+          created_at?: string
+          frequency: string
+          id?: string
+          is_active?: boolean
+          next_date: string
+          note?: string | null
+          start_date: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          frequency?: string
+          id?: string
+          is_active?: boolean
+          next_date?: string
+          note?: string | null
+          start_date?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []

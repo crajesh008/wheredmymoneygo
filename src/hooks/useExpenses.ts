@@ -9,6 +9,7 @@ export interface Expense {
   note: string;
   date: string;
   timestamp: number;
+  receipt_url?: string;
 }
 
 export const useExpenses = () => {
@@ -36,7 +37,8 @@ export const useExpenses = () => {
         mood: exp.mood as any,
         note: exp.note || '',
         date: exp.date,
-        timestamp: exp.timestamp
+        timestamp: exp.timestamp,
+        receipt_url: exp.receipt_url || undefined
       })));
     }
   };
@@ -55,7 +57,8 @@ export const useExpenses = () => {
         mood: expense.mood,
         note: expense.note,
         date: expense.date,
-        timestamp
+        timestamp,
+        receipt_url: expense.receipt_url || null
       })
       .select()
       .single();
@@ -68,7 +71,8 @@ export const useExpenses = () => {
         mood: data.mood as any,
         note: data.note || '',
         date: data.date,
-        timestamp: data.timestamp
+        timestamp: data.timestamp,
+        receipt_url: data.receipt_url || undefined
       };
       setExpenses([newExpense, ...expenses]);
       return newExpense;
