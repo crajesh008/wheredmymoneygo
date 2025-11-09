@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/button';
 const Index = () => {
   const navigate = useNavigate();
   const { expenses, addExpense, deleteExpense, updateExpense } = useExpenses();
-  const { monthlyBudget, updateBudget } = useBudget();
+  const { monthlyBudget, categoryBudgets, updateBudget, updateCategoryBudgets } = useBudget();
   const [showInsight, setShowInsight] = useState(false);
 
   useEffect(() => {
@@ -100,7 +100,9 @@ const Index = () => {
             <BudgetTracker 
               expenses={expenses} 
               monthlyBudget={monthlyBudget}
+              categoryBudgets={categoryBudgets}
               onBudgetUpdate={updateBudget}
+              onCategoryBudgetsUpdate={updateCategoryBudgets}
             />
           </div>
 

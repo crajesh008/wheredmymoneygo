@@ -2,19 +2,31 @@ import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Expense } from '@/hooks/useExpenses';
+import { CategoryBudgets } from '@/hooks/useBudget';
 import { useState } from 'react';
-import { Settings } from 'lucide-react';
+import { Settings, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface BudgetTrackerProps {
   expenses: Expense[];
   monthlyBudget: number;
+  categoryBudgets: CategoryBudgets;
   onBudgetUpdate: (newBudget: number) => void;
+  onCategoryBudgetsUpdate: (newCategoryBudgets: CategoryBudgets) => void;
 }
 
-export const BudgetTracker = ({ expenses, monthlyBudget, onBudgetUpdate }: BudgetTrackerProps) => {
+export const BudgetTracker = ({ 
+  expenses, 
+  monthlyBudget, 
+  categoryBudgets,
+  onBudgetUpdate,
+  onCategoryBudgetsUpdate 
+}: BudgetTrackerProps) => {
   const [isEditing, setIsEditing] = useState(false);
+  const [showCategories, setShowCategories] = useState(false);
   const [budgetInput, setBudgetInput] = useState(monthlyBudget.toString());
+  const [categoryInputs, setCategoryInputs] = useState<CategoryBudgets>(categoryBudgets);
 
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -22,6 +34,13 @@ export const BudgetTracker = ({ expenses, monthlyBudget, onBudgetUpdate }: Budge
   const monthTotal = expenses
     .filter((exp) => new Date(exp.date) >= startOfMonth)
     .reduce((sum, exp) => sum + exp.amount, 0);
+
+  const categoryTotals = expenses
+    .filter((exp) => new Date(exp.date) >= startOfMonth)
+    .reduce((acc, exp) => {
+      acc[exp.category] = (acc[exp.category] || 0) + exp.amount;
+      return acc;
+    }, {} as Record<string, number>);
 
   const remaining = monthlyBudget - monthTotal;
   const percentUsed = (monthTotal / monthlyBudget) * 100;
@@ -32,6 +51,20 @@ export const BudgetTracker = ({ expenses, monthlyBudget, onBudgetUpdate }: Budge
       onBudgetUpdate(newBudget);
       setIsEditing(false);
     }
+  };
+
+  const handleSaveCategoryBudgets = () => {
+    onCategoryBudgetsUpdate(categoryInputs);
+    setShowCategories(false);
+  };
+
+  const categories: (keyof CategoryBudgets)[] = ['Food', 'Travel', 'Shopping', 'Rent', 'Other'];
+  const categoryEmojis = {
+    Food: '🍔',
+    Travel: '✈️',
+    Shopping: '🛍️',
+    Rent: '🏠',
+    Other: '📦',
   };
 
   return (
@@ -109,6 +142,66 @@ export const BudgetTracker = ({ expenses, monthlyBudget, onBudgetUpdate }: Budge
                 ✨ Great job! You're staying within budget.
               </div>
             )}
+
+            {/* Category Budgets Section */}
+            <div className="border-t border-border pt-4 mt-4">
+              <Button
+                variant="ghost"
+                className="w-full flex items-center justify-between p-0 h-auto hover:bg-transparent"
+                onClick={() => setShowCategories(!showCategories)}
+              >
+                <span className="text-sm font-medium">Category Budgets</span>
+                {showCategories ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </Button>
+
+              {showCategories && (
+                <div className="mt-4 space-y-3">
+                  {categories.map((cat) => {
+                    const spent = categoryTotals[cat] || 0;
+                    const budget = categoryBudgets[cat] || 0;
+                    const percent = budget > 0 ? (spent / budget) * 100 : 0;
+
+                    return (
+                      <div key={cat} className="space-y-1">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">
+                            {categoryEmojis[cat]} {cat}
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="number"
+                              value={categoryInputs[cat]}
+                              onChange={(e) => setCategoryInputs({
+                                ...categoryInputs,
+                                [cat]: Number(e.target.value)
+                              })}
+                              className="w-20 h-7 text-xs"
+                              placeholder="0"
+                            />
+                            <span className="text-xs text-muted-foreground">
+                              ${spent.toFixed(0)} spent
+                            </span>
+                          </div>
+                        </div>
+                        {budget > 0 && (
+                          <Progress 
+                            value={Math.min(percent, 100)} 
+                            className="h-1.5"
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
+                  <Button 
+                    onClick={handleSaveCategoryBudgets} 
+                    size="sm" 
+                    className="w-full mt-2"
+                  >
+                    Save Category Budgets
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
         </>
       )}

@@ -11,7 +11,12 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Expense } from '@/hooks/useExpenses';
+import { CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface ExpenseFormProps {
   onSubmit: (expense: Omit<Expense, 'id' | 'timestamp'>) => void;
@@ -22,6 +27,7 @@ export const ExpenseForm = ({ onSubmit }: ExpenseFormProps) => {
   const [category, setCategory] = useState<Expense['category']>('Food');
   const [mood, setMood] = useState<Expense['mood']>('Neutral');
   const [note, setNote] = useState('');
+  const [date, setDate] = useState<Date>(new Date());
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,11 +39,12 @@ export const ExpenseForm = ({ onSubmit }: ExpenseFormProps) => {
       category,
       mood,
       note,
-      date: new Date().toISOString(),
+      date: date.toISOString(),
     });
 
     setAmount('');
     setNote('');
+    setDate(new Date());
   };
 
   return (
@@ -56,6 +63,33 @@ export const ExpenseForm = ({ onSubmit }: ExpenseFormProps) => {
             className="text-lg"
             required
           />
+        </div>
+
+        <div>
+          <Label htmlFor="date">Date</Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  "w-full justify-start text-left font-normal",
+                  !date && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {date ? format(date, "PPP") : <span>Pick a date</span>}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={date}
+                onSelect={(newDate) => newDate && setDate(newDate)}
+                initialFocus
+                className="pointer-events-auto"
+              />
+            </PopoverContent>
+          </Popover>
         </div>
 
         <div>
