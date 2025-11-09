@@ -10,8 +10,14 @@ interface SpendingChartsProps {
 
 const COLORS = {
   Food: 'hsl(160 65% 45%)',
+  Groceries: 'hsl(120 55% 50%)',
   Travel: 'hsl(200 70% 60%)',
+  Transportation: 'hsl(220 60% 55%)',
   Shopping: 'hsl(280 65% 60%)',
+  Entertainment: 'hsl(300 70% 65%)',
+  Healthcare: 'hsl(340 60% 55%)',
+  Utilities: 'hsl(180 50% 50%)',
+  Education: 'hsl(260 60% 60%)',
   Rent: 'hsl(40 95% 55%)',
   Other: 'hsl(0 0% 60%)',
 };
@@ -19,7 +25,7 @@ const COLORS = {
 export const SpendingCharts = ({ expenses }: SpendingChartsProps) => {
   const [hiddenCategories, setHiddenCategories] = useState<Set<string>>(new Set());
 
-  const allCategories = ['Food', 'Travel', 'Shopping', 'Rent', 'Other'];
+  const allCategories = ['Food', 'Groceries', 'Travel', 'Transportation', 'Shopping', 'Entertainment', 'Healthcare', 'Utilities', 'Education', 'Rent', 'Other'];
 
   // Category data
   const categoryData = allCategories.map(category => ({

@@ -137,6 +137,63 @@ export const clearAndGenerateSampleData = async () => {
     throw error;
   }
 
+  // Generate sample budget
+  const categoryBudgets = {
+    Food: 300,
+    Groceries: 400,
+    Travel: 500,
+    Transportation: 200,
+    Shopping: 250,
+    Entertainment: 150,
+    Healthcare: 200,
+    Utilities: 300,
+    Education: 200,
+    Rent: 1200,
+    Other: 100
+  };
+
+  const { error: budgetError } = await supabase
+    .from('budgets')
+    .upsert({
+      user_id: user.id,
+      monthly_budget: 3000,
+      category_budgets: categoryBudgets
+    });
+
+  if (budgetError) {
+    console.error('Error generating budget:', budgetError);
+  }
+
+  // Generate sample notifications
+  const sampleNotifications = [
+    {
+      user_id: user.id,
+      title: '🎯 Budget Alert',
+      message: 'You\'ve used 75% of your Food budget this month.',
+      type: 'warning'
+    },
+    {
+      user_id: user.id,
+      title: '✅ Savings Milestone',
+      message: 'Great job! You\'re $200 under budget this month.',
+      type: 'success'
+    },
+    {
+      user_id: user.id,
+      title: '💡 Tip',
+      message: 'You tend to spend more on weekends. Plan ahead to stay on budget!',
+      type: 'info'
+    }
+  ];
+
+  const { error: notifError } = await supabase
+    .from('notifications')
+    .insert(sampleNotifications);
+
+  if (notifError) {
+    console.error('Error generating notifications:', notifError);
+  }
+
   return expenses.length;
 };
 

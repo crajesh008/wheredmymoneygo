@@ -14,9 +14,17 @@ import { ExpenseList } from '@/components/ExpenseList';
 import { MotivationBanner } from '@/components/MotivationBanner';
 import { SavingsGoals } from '@/components/SavingsGoals';
 import { SampleDataGenerator } from '@/components/SampleDataGenerator';
+import { NotificationList } from '@/components/NotificationList';
 import { toast } from '@/hooks/use-toast';
-import { Wallet, User } from 'lucide-react';
+import { Wallet, User, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -110,6 +118,20 @@ const Index = () => {
             </div>
             <div className="flex items-center gap-2">
               <SampleDataGenerator onGenerated={handleSampleDataGenerated} />
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="ghost" size="sm" className="gap-2">
+                    <Bell className="w-4 h-4" />
+                    Notifications
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>Notifications</DialogTitle>
+                  </DialogHeader>
+                  <NotificationList />
+                </DialogContent>
+              </Dialog>
               <Button 
                 variant="ghost" 
                 size="sm"
