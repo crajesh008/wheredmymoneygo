@@ -27,15 +27,31 @@ export const SpendingCharts = ({ expenses }: SpendingChartsProps) => {
 
   const allCategories = ['Food', 'Groceries', 'Travel', 'Transportation', 'Shopping', 'Entertainment', 'Healthcare', 'Utilities', 'Education', 'Rent', 'Other'];
 
-  // Category data
+  // Category data - sort by value to show top spenders first
   const categoryData = allCategories.map(category => ({
     name: category,
     value: expenses
       .filter(exp => exp.category === category)
       .reduce((sum, exp) => sum + exp.amount, 0)
-  }));
+  })).sort((a, b) => b.value - a.value); // Sort by spending amount
 
-  const visibleCategoryData = categoryData.filter(item => !hiddenCategories.has(item.name) && item.value > 0);
+  // Only show categories with spending, grouped intelligently
+  const totalSpending = categoryData.reduce((sum, cat) => sum + cat.value, 0);
+  const threshold = totalSpending * 0.02; // Show categories with at least 2% of total spending
+  
+  const significantCategories = categoryData.filter(cat => cat.value > threshold);
+  const smallCategories = categoryData.filter(cat => cat.value > 0 && cat.value <= threshold);
+  
+  // Group small categories into "Other" if there are more than 2
+  let finalCategoryData = significantCategories;
+  if (smallCategories.length > 0) {
+    const otherTotal = smallCategories.reduce((sum, cat) => sum + cat.value, 0);
+    if (otherTotal > 0) {
+      finalCategoryData = [...significantCategories, { name: 'Other (Combined)', value: otherTotal }];
+    }
+  }
+
+  const visibleCategoryData = finalCategoryData.filter(item => !hiddenCategories.has(item.name));
 
   const handleLegendClick = (category: string) => {
     setHiddenCategories(prev => {
@@ -98,25 +114,46 @@ export const SpendingCharts = ({ expenses }: SpendingChartsProps) => {
                 );
               })}
             </div>
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={350}>
               <PieChart>
                 <Pie
                   data={visibleCategoryData}
                   cx="50%"
                   cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={80}
+                  labelLine={true}
+                  label={({ name, value, percent }) => {
+                    // Only show label if slice is big enough
+                    if (percent < 0.05) return ''; 
+                    return `${name} $${value.toFixed(0)} (${(percent * 100).toFixed(0)}%)`;
+                  }}
+                  outerRadius={110}
+                  innerRadius={40}
                   fill="#8884d8"
                   dataKey="value"
+                  paddingAngle={2}
                 >
-                  {visibleCategoryData.map((entry) => (
-                    <Cell key={entry.name} fill={COLORS[entry.name as keyof typeof COLORS]} />
-                  ))}
+                  {visibleCategoryData.map((entry) => {
+                    const color = entry.name === 'Other (Combined)' 
+                      ? 'hsl(0 0% 60%)' 
+                      : COLORS[entry.name as keyof typeof COLORS];
+                    return (
+                      <Cell key={entry.name} fill={color} />
+                    );
+                  })}
                 </Pie>
-                <Tooltip />
+                <Tooltip 
+                  formatter={(value: number) => `$${value.toFixed(2)}`}
+                  contentStyle={{ 
+                    backgroundColor: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px'
+                  }}
+                />
               </PieChart>
             </ResponsiveContainer>
+            <div className="mt-4 text-xs text-muted-foreground text-center">
+              💡 Small spending categories are combined into "Other" for clarity
+            </div>
           </>
         ) : (
           <div className="h-[300px] flex items-center justify-center text-muted-foreground">
