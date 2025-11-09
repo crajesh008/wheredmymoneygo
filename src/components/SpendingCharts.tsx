@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Expense } from '@/hooks/useExpenses';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { cn } from '@/lib/utils';
 
 interface SpendingChartsProps {
   expenses: Expense[];
@@ -18,15 +19,17 @@ const COLORS = {
 export const SpendingCharts = ({ expenses }: SpendingChartsProps) => {
   const [hiddenCategories, setHiddenCategories] = useState<Set<string>>(new Set());
 
-  // Category data
-  const categoryData = Object.entries(
-    expenses.reduce((acc, exp) => {
-      acc[exp.category] = (acc[exp.category] || 0) + exp.amount;
-      return acc;
-    }, {} as Record<string, number>)
-  ).map(([name, value]) => ({ name, value }));
+  const allCategories = ['Food', 'Travel', 'Shopping', 'Rent', 'Other'];
 
-  const visibleCategoryData = categoryData.filter(item => !hiddenCategories.has(item.name));
+  // Category data
+  const categoryData = allCategories.map(category => ({
+    name: category,
+    value: expenses
+      .filter(exp => exp.category === category)
+      .reduce((sum, exp) => sum + exp.amount, 0)
+  }));
+
+  const visibleCategoryData = categoryData.filter(item => !hiddenCategories.has(item.name) && item.value > 0);
 
   const handleLegendClick = (category: string) => {
     setHiddenCategories(prev => {
@@ -62,41 +65,56 @@ export const SpendingCharts = ({ expenses }: SpendingChartsProps) => {
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <Card className="p-6 shadow-card">
         <h3 className="text-xl font-semibold mb-4 text-foreground">Spending by Category 🥧</h3>
-        {categoryData.length > 0 ? (
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={visibleCategoryData}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                outerRadius={80}
-                fill="#8884d8"
-                dataKey="value"
-              >
-                {visibleCategoryData.map((entry) => (
-                  <Cell key={entry.name} fill={COLORS[entry.name as keyof typeof COLORS]} />
-                ))}
-              </Pie>
-              <Tooltip />
-              <Legend 
-                onClick={(e) => handleLegendClick(e.value)}
-                wrapperStyle={{ cursor: 'pointer' }}
-                formatter={(value) => (
-                  <span style={{ 
-                    textDecoration: hiddenCategories.has(value) ? 'line-through' : 'none',
-                    opacity: hiddenCategories.has(value) ? 0.5 : 1 
-                  }}>
-                    {value}
-                  </span>
-                )}
-              />
-            </PieChart>
-          </ResponsiveContainer>
+        {visibleCategoryData.length > 0 ? (
+          <>
+            <div className="flex flex-wrap gap-2 mb-4">
+              {allCategories.map(category => {
+                const isHidden = hiddenCategories.has(category);
+                const hasData = categoryData.find(c => c.name === category)?.value || 0;
+                return (
+                  <button
+                    key={category}
+                    onClick={() => handleLegendClick(category)}
+                    className={cn(
+                      "px-3 py-1 rounded-full text-xs font-medium border transition-all",
+                      isHidden 
+                        ? "bg-muted/30 border-border/50 text-muted-foreground line-through opacity-50" 
+                        : "border-border text-foreground hover:bg-muted/50",
+                      !hasData && "opacity-40"
+                    )}
+                    style={{ 
+                      backgroundColor: !isHidden && hasData ? `${COLORS[category as keyof typeof COLORS]}20` : undefined,
+                      borderColor: !isHidden && hasData ? COLORS[category as keyof typeof COLORS] : undefined
+                    }}
+                  >
+                    {category}
+                  </button>
+                );
+              })}
+            </div>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={visibleCategoryData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {visibleCategoryData.map((entry) => (
+                    <Cell key={entry.name} fill={COLORS[entry.name as keyof typeof COLORS]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          </>
         ) : (
           <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-            No expenses yet. Start tracking!
+            {categoryData.every(c => c.value === 0) ? 'No expenses yet. Start tracking!' : 'All categories hidden. Click a category above to show it.'}
           </div>
         )}
       </Card>

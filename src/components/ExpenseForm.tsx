@@ -13,8 +13,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Switch } from '@/components/ui/switch';
 import { Expense } from '@/hooks/useExpenses';
-import { CalendarIcon, Upload, X } from 'lucide-react';
+import { CalendarIcon, Upload, X, Repeat } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -33,6 +34,8 @@ export const ExpenseForm = ({ onSubmit }: ExpenseFormProps) => {
   const [receipt, setReceipt] = useState<File | null>(null);
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [frequency, setFrequency] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('monthly');
 
   const handleReceiptChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -75,6 +78,36 @@ export const ExpenseForm = ({ onSubmit }: ExpenseFormProps) => {
     if (!amount || isNaN(Number(amount))) return;
 
     setIsUploading(true);
+
+    // If recurring, create recurring expense instead
+    if (isRecurring) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { error } = await supabase.from('recurring_expenses').insert({
+        user_id: user.id,
+        amount: Number(amount),
+        category,
+        frequency,
+        note,
+        start_date: date.toISOString().split('T')[0],
+        next_date: date.toISOString().split('T')[0]
+      });
+
+      if (error) {
+        toast({ title: "Error creating recurring expense", variant: "destructive" });
+      } else {
+        toast({ title: "Recurring expense created! 🔄", description: `${frequency} expense of $${amount}` });
+      }
+
+      setAmount('');
+      setNote('');
+      setDate(new Date());
+      setIsRecurring(false);
+      setIsUploading(false);
+      return;
+    }
+
     const receipt_url = await uploadReceipt();
 
     onSubmit({
@@ -155,75 +188,121 @@ export const ExpenseForm = ({ onSubmit }: ExpenseFormProps) => {
           </Select>
         </div>
 
-        <div>
-          <Label htmlFor="mood">Mood at Purchase</Label>
-          <Select value={mood} onValueChange={(val) => setMood(val as Expense['mood'])}>
-            <SelectTrigger id="mood">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Happy">😊 Happy</SelectItem>
-              <SelectItem value="Stressed">😰 Stressed</SelectItem>
-              <SelectItem value="Bored">😑 Bored</SelectItem>
-              <SelectItem value="Neutral">😐 Neutral</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div>
-          <Label htmlFor="note">Add description (optional)</Label>
-          <Textarea
-            id="note"
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder="Why did you buy this?"
-            rows={3}
+        <div className="flex items-center justify-between p-3 border border-border rounded-lg bg-muted/30">
+          <div className="flex items-center gap-2">
+            <Repeat className="w-4 h-4 text-primary" />
+            <Label htmlFor="recurring" className="cursor-pointer">Make this recurring</Label>
+          </div>
+          <Switch 
+            id="recurring"
+            checked={isRecurring}
+            onCheckedChange={setIsRecurring}
           />
         </div>
 
-        <div>
-          <Label htmlFor="receipt">Receipt (optional)</Label>
-          <div className="space-y-2">
-            {receiptPreview ? (
-              <div className="relative border border-border rounded-lg p-2">
-                <img src={receiptPreview} alt="Receipt preview" className="max-h-32 rounded" />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="absolute top-1 right-1"
-                  onClick={() => {
-                    setReceipt(null);
-                    setReceiptPreview(null);
-                  }}
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
-            ) : (
-              <div className="border-2 border-dashed border-border rounded-lg p-4 text-center">
-                <input
-                  id="receipt"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleReceiptChange}
-                  className="hidden"
-                />
-                <Label htmlFor="receipt" className="cursor-pointer">
-                  <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">Click to upload receipt</span>
-                </Label>
-              </div>
-            )}
+        {isRecurring && (
+          <div>
+            <Label htmlFor="frequency">Frequency</Label>
+            <Select value={frequency} onValueChange={(val) => setFrequency(val as any)}>
+              <SelectTrigger id="frequency">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="daily">Daily</SelectItem>
+                <SelectItem value="weekly">Weekly</SelectItem>
+                <SelectItem value="monthly">Monthly</SelectItem>
+                <SelectItem value="yearly">Yearly</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-        </div>
+        )}
+
+        {!isRecurring && (
+          <>
+            <div>
+              <Label htmlFor="mood">Mood at Purchase</Label>
+              <Select value={mood} onValueChange={(val) => setMood(val as Expense['mood'])}>
+                <SelectTrigger id="mood">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Happy">😊 Happy</SelectItem>
+                  <SelectItem value="Stressed">😰 Stressed</SelectItem>
+                  <SelectItem value="Bored">😑 Bored</SelectItem>
+                  <SelectItem value="Neutral">😐 Neutral</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="note">Add description (optional)</Label>
+              <Textarea
+                id="note"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="Why did you buy this?"
+                rows={3}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="receipt">Receipt (optional)</Label>
+              <div className="space-y-2">
+                {receiptPreview ? (
+                  <div className="relative border border-border rounded-lg p-2">
+                    <img src={receiptPreview} alt="Receipt preview" className="max-h-32 rounded" />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute top-1 right-1"
+                      onClick={() => {
+                        setReceipt(null);
+                        setReceiptPreview(null);
+                      }}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="border-2 border-dashed border-border rounded-lg p-4 text-center">
+                    <input
+                      id="receipt"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleReceiptChange}
+                      className="hidden"
+                    />
+                    <Label htmlFor="receipt" className="cursor-pointer">
+                      <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">Click to upload receipt</span>
+                    </Label>
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        )}
+
+        {isRecurring && (
+          <div>
+            <Label htmlFor="note">Description (optional)</Label>
+            <Textarea
+              id="note"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="E.g., Netflix subscription"
+              rows={2}
+            />
+          </div>
+        )}
 
         <Button 
           type="submit" 
           className="w-full bg-gradient-mint text-lg py-6"
           disabled={isUploading}
         >
-          {isUploading ? 'Uploading...' : 'Add Expense'}
+          {isUploading ? 'Processing...' : isRecurring ? 'Create Recurring Expense' : 'Add Expense'}
         </Button>
       </form>
     </Card>

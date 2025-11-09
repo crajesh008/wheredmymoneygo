@@ -15,6 +15,7 @@ import { MotivationBanner } from '@/components/MotivationBanner';
 import { RecurringExpensesDialog } from '@/components/RecurringExpensesDialog';
 import { SampleDataGenerator } from '@/components/SampleDataGenerator';
 import { NotificationSettings } from '@/components/NotificationSettings';
+import { SavingsGoals } from '@/components/SavingsGoals';
 import { toast } from '@/hooks/use-toast';
 import { Wallet, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -160,6 +161,7 @@ const Index = () => {
 
           {/* Right Column - Charts and List */}
           <div className="lg:col-span-2 space-y-6">
+            <SavingsGoals />
             {!showInsight && expenses.length > 0 && (
               <InsightsPanel expenses={expenses} />
             )}
