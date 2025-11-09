@@ -92,7 +92,11 @@ export const SpendingCharts = ({ expenses }: SpendingChartsProps) => {
             <div className="flex flex-wrap gap-2 mb-4">
               {allCategories.map(category => {
                 const isHidden = hiddenCategories.has(category);
-                const hasData = categoryData.find(c => c.name === category)?.value || 0;
+                const categoryValue = categoryData.find(c => c.name === category)?.value || 0;
+                const totalSpendingForLegend = categoryData.reduce((sum, cat) => sum + cat.value, 0);
+                const percentage = totalSpendingForLegend > 0 ? (categoryValue / totalSpendingForLegend * 100).toFixed(1) : 0;
+                const hasData = categoryValue > 0;
+                
                 return (
                   <button
                     key={category}
@@ -109,7 +113,7 @@ export const SpendingCharts = ({ expenses }: SpendingChartsProps) => {
                       borderColor: !isHidden && hasData ? COLORS[category as keyof typeof COLORS] : undefined
                     }}
                   >
-                    {category}
+                    {category} {hasData && `${percentage}%`}
                   </button>
                 );
               })}
@@ -120,12 +124,8 @@ export const SpendingCharts = ({ expenses }: SpendingChartsProps) => {
                   data={visibleCategoryData}
                   cx="50%"
                   cy="50%"
-                  labelLine={true}
-                  label={({ name, value, percent }) => {
-                    // Only show label if slice is big enough
-                    if (percent < 0.05) return ''; 
-                    return `${name} $${value.toFixed(0)} (${(percent * 100).toFixed(0)}%)`;
-                  }}
+                  labelLine={false}
+                  label={false}
                   outerRadius={110}
                   innerRadius={40}
                   fill="#8884d8"
