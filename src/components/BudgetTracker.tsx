@@ -81,19 +81,50 @@ export const BudgetTracker = ({
       </div>
 
       {isEditing ? (
-        <div className="space-y-3">
-          <Input
-            type="number"
-            value={budgetInput}
-            onChange={(e) => setBudgetInput(e.target.value)}
-            placeholder="Enter budget"
-          />
-          <div className="flex gap-2">
-            <Button onClick={handleSave} size="sm" className="flex-1">Save</Button>
+        <div className="space-y-4">
+          <div>
+            <Label className="text-sm text-muted-foreground mb-2">Monthly Budget</Label>
+            <Input
+              type="number"
+              value={budgetInput}
+              onChange={(e) => setBudgetInput(e.target.value)}
+              placeholder="Enter budget"
+            />
+          </div>
+          
+          <div className="border-t border-border pt-4">
+            <Label className="text-sm font-medium mb-3 block">Category Budgets</Label>
+            <div className="space-y-3">
+              {categories.map((cat) => (
+                <div key={cat} className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">
+                    {categoryEmojis[cat]} {cat}
+                  </Label>
+                  <Input
+                    type="number"
+                    value={categoryInputs[cat]}
+                    onChange={(e) => setCategoryInputs({
+                      ...categoryInputs,
+                      [cat]: Number(e.target.value)
+                    })}
+                    className="h-8"
+                    placeholder="0"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex gap-2 pt-2">
+            <Button onClick={() => {
+              handleSave();
+              handleSaveCategoryBudgets();
+            }} size="sm" className="flex-1">Save All</Button>
             <Button 
               onClick={() => {
                 setIsEditing(false);
                 setBudgetInput(monthlyBudget.toString());
+                setCategoryInputs(categoryBudgets);
               }} 
               size="sm" 
               variant="outline"
@@ -162,26 +193,14 @@ export const BudgetTracker = ({
                     const percent = budget > 0 ? (spent / budget) * 100 : 0;
 
                     return (
-                      <div key={cat} className="space-y-1">
+                      <div key={cat} className="space-y-1.5">
                         <div className="flex items-center justify-between text-sm">
                           <span className="text-muted-foreground">
                             {categoryEmojis[cat]} {cat}
                           </span>
-                          <div className="flex items-center gap-2">
-                            <Input
-                              type="number"
-                              value={categoryInputs[cat]}
-                              onChange={(e) => setCategoryInputs({
-                                ...categoryInputs,
-                                [cat]: Number(e.target.value)
-                              })}
-                              className="w-20 h-7 text-xs"
-                              placeholder="0"
-                            />
-                            <span className="text-xs text-muted-foreground">
-                              ${spent.toFixed(0)} spent
-                            </span>
-                          </div>
+                          <span className="text-xs text-muted-foreground">
+                            ${spent.toFixed(0)} / ${budget > 0 ? budget.toFixed(0) : '0'}
+                          </span>
                         </div>
                         {budget > 0 && (
                           <Progress 
@@ -192,13 +211,6 @@ export const BudgetTracker = ({
                       </div>
                     );
                   })}
-                  <Button 
-                    onClick={handleSaveCategoryBudgets} 
-                    size="sm" 
-                    className="w-full mt-2"
-                  >
-                    Save Category Budgets
-                  </Button>
                 </div>
               )}
             </div>
