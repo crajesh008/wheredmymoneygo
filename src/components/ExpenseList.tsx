@@ -140,8 +140,11 @@ export const ExpenseList = ({ expenses, onDelete, onUpdate }: ExpenseListProps) 
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-2xl">{getCategoryEmoji(expense.category)}</span>
-                    <span className="font-semibold text-foreground">${expense.amount.toFixed(2)}</span>
+                    <span className="font-bold text-foreground">{expense.title}</span>
                     <span className="text-sm text-muted-foreground">•</span>
+                    <span className="font-semibold text-foreground">${expense.amount.toFixed(2)}</span>
+                  </div>
+                  <div className="flex items-center gap-2 mb-1">
                     <span className="text-sm text-muted-foreground">{expense.category}</span>
                     <span className="text-xl">{getMoodEmoji(expense.mood)}</span>
                   </div>

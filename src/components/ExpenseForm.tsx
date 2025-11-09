@@ -26,6 +26,7 @@ interface ExpenseFormProps {
 }
 
 export const ExpenseForm = ({ onSubmit }: ExpenseFormProps) => {
+  const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState<Expense['category']>('Food');
   const [mood, setMood] = useState<Expense['mood']>('Neutral');
@@ -36,6 +37,33 @@ export const ExpenseForm = ({ onSubmit }: ExpenseFormProps) => {
   const [isUploading, setIsUploading] = useState(false);
   const [isRecurring, setIsRecurring] = useState(false);
   const [frequency, setFrequency] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('monthly');
+  const [isSuggestingCategory, setIsSuggestingCategory] = useState(false);
+
+  const handleTitleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newTitle = e.target.value;
+    setTitle(newTitle);
+
+    // Auto-suggest category when title has at least 3 characters
+    if (newTitle.length >= 3) {
+      setIsSuggestingCategory(true);
+      try {
+        const { data, error } = await supabase.functions.invoke('suggest-category', {
+          body: { title: newTitle }
+        });
+
+        if (!error && data?.category) {
+          const validCategories = ['Food', 'Groceries', 'Travel', 'Transportation', 'Shopping', 'Entertainment', 'Healthcare', 'Utilities', 'Education', 'Rent', 'Other'];
+          if (validCategories.includes(data.category)) {
+            setCategory(data.category as Expense['category']);
+          }
+        }
+      } catch (error) {
+        console.error('Error suggesting category:', error);
+      } finally {
+        setIsSuggestingCategory(false);
+      }
+    }
+  };
 
   const handleReceiptChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -75,7 +103,7 @@ export const ExpenseForm = ({ onSubmit }: ExpenseFormProps) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!amount || isNaN(Number(amount))) return;
+    if (!title || !amount || isNaN(Number(amount))) return;
 
     setIsUploading(true);
 
@@ -111,6 +139,7 @@ export const ExpenseForm = ({ onSubmit }: ExpenseFormProps) => {
     const receipt_url = await uploadReceipt();
 
     onSubmit({
+      title,
       amount: Number(amount),
       category,
       mood,
@@ -119,6 +148,7 @@ export const ExpenseForm = ({ onSubmit }: ExpenseFormProps) => {
       receipt_url: receipt_url || undefined
     });
 
+    setTitle('');
     setAmount('');
     setNote('');
     setDate(new Date());
@@ -131,6 +161,22 @@ export const ExpenseForm = ({ onSubmit }: ExpenseFormProps) => {
     <Card className="p-6 shadow-card bg-card">
       <h2 className="text-2xl font-bold mb-6 text-foreground">Add Expense 💸</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <Label htmlFor="title">Title</Label>
+          <Input
+            id="title"
+            type="text"
+            value={title}
+            onChange={handleTitleChange}
+            placeholder="e.g., Morning coffee, Uber ride, Netflix subscription"
+            className="text-lg"
+            required
+          />
+          {isSuggestingCategory && (
+            <p className="text-xs text-muted-foreground mt-1">✨ Suggesting category...</p>
+          )}
+        </div>
+
         <div>
           <Label htmlFor="amount">Amount ($)</Label>
           <Input

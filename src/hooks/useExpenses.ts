@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 export interface Expense {
   id: string;
+  title: string;
   amount: number;
   category: 'Food' | 'Travel' | 'Shopping' | 'Rent' | 'Entertainment' | 'Healthcare' | 'Utilities' | 'Transportation' | 'Education' | 'Groceries' | 'Other';
   mood: 'Happy' | 'Stressed' | 'Bored' | 'Neutral';
@@ -32,6 +33,7 @@ export const useExpenses = () => {
     if (!error && data) {
       setExpenses(data.map(exp => ({
         id: exp.id,
+        title: exp.title || 'Untitled',
         amount: Number(exp.amount),
         category: exp.category as any,
         mood: exp.mood as any,
@@ -52,6 +54,7 @@ export const useExpenses = () => {
       .from('expenses')
       .insert({
         user_id: user.id,
+        title: expense.title,
         amount: expense.amount,
         category: expense.category,
         mood: expense.mood,
@@ -66,6 +69,7 @@ export const useExpenses = () => {
     if (!error && data) {
       const newExpense: Expense = {
         id: data.id,
+        title: data.title || 'Untitled',
         amount: Number(data.amount),
         category: data.category as any,
         mood: data.mood as any,

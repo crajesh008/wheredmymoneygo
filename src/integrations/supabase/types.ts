@@ -76,6 +76,7 @@ export type Database = {
           note: string | null
           receipt_url: string | null
           timestamp: number
+          title: string
           user_id: string
         }
         Insert: {
@@ -88,6 +89,7 @@ export type Database = {
           note?: string | null
           receipt_url?: string | null
           timestamp: number
+          title?: string
           user_id: string
         }
         Update: {
@@ -100,6 +102,7 @@ export type Database = {
           note?: string | null
           receipt_url?: string | null
           timestamp?: number
+          title?: string
           user_id?: string
         }
         Relationships: []
