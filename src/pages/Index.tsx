@@ -13,6 +13,8 @@ import { BudgetTracker } from '@/components/BudgetTracker';
 import { ExpenseList } from '@/components/ExpenseList';
 import { MotivationBanner } from '@/components/MotivationBanner';
 import { RecurringExpensesDialog } from '@/components/RecurringExpensesDialog';
+import { SampleDataGenerator } from '@/components/SampleDataGenerator';
+import { NotificationSettings } from '@/components/NotificationSettings';
 import { toast } from '@/hooks/use-toast';
 import { Wallet, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -76,14 +78,20 @@ const Index = () => {
   }, [navigate]);
 
   const handleAddExpense = async (expenseData: Parameters<typeof addExpense>[0]) => {
-    await addExpense(expenseData);
-    setShowInsight(true);
-    toast({
-      title: "Expense added! 💰",
-      description: `Logged $${expenseData.amount} for ${expenseData.category}`,
-    });
-    
-    setTimeout(() => setShowInsight(false), 5000);
+    const result = await addExpense(expenseData);
+    if (result) {
+      setShowInsight(true);
+      toast({
+        title: "Expense added! 💰",
+        description: `Logged $${expenseData.amount} for ${expenseData.category}`,
+      });
+      
+      setTimeout(() => setShowInsight(false), 5000);
+    }
+  };
+
+  const handleSampleDataGenerated = () => {
+    window.location.reload();
   };
 
   const handleLogout = async () => {
@@ -107,6 +115,7 @@ const Index = () => {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <SampleDataGenerator onGenerated={handleSampleDataGenerated} />
               <RecurringExpensesDialog />
               <Button variant="ghost" size="sm" onClick={handleLogout}>
                 <LogOut className="w-4 h-4 mr-2" />
@@ -121,6 +130,9 @@ const Index = () => {
       <main className="container mx-auto px-4 py-8 space-y-8 max-w-7xl">
         {/* Motivation Banner */}
         <MotivationBanner />
+
+        {/* Notification Settings */}
+        <NotificationSettings />
 
         {/* Summary Cards */}
         <SummaryCards expenses={expenses} />

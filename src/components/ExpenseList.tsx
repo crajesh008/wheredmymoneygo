@@ -2,7 +2,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Expense } from '@/hooks/useExpenses';
 import { Trash2, Edit, Receipt } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -24,6 +24,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import { ExpenseFilters, ExpenseFilterOptions } from '@/components/ExpenseFilters';
+import { DataExport } from '@/components/DataExport';
 
 interface ExpenseListProps {
   expenses: Expense[];
@@ -56,6 +58,19 @@ export const ExpenseList = ({ expenses, onDelete, onUpdate }: ExpenseListProps) 
   const [category, setCategory] = useState<Expense['category']>('Food');
   const [mood, setMood] = useState<Expense['mood']>('Neutral');
   const [note, setNote] = useState('');
+  const [filters, setFilters] = useState<ExpenseFilterOptions>({});
+
+  const filteredExpenses = useMemo(() => {
+    return expenses.filter(expense => {
+      if (filters.category && expense.category !== filters.category) return false;
+      if (filters.mood && expense.mood !== filters.mood) return false;
+      if (filters.minAmount && expense.amount < filters.minAmount) return false;
+      if (filters.maxAmount && expense.amount > filters.maxAmount) return false;
+      if (filters.startDate && expense.date < filters.startDate) return false;
+      if (filters.endDate && expense.date > filters.endDate) return false;
+      return true;
+    });
+  }, [expenses, filters]);
 
   const handleEdit = (expense: Expense) => {
     setEditingExpense(expense);
@@ -88,69 +103,84 @@ export const ExpenseList = ({ expenses, onDelete, onUpdate }: ExpenseListProps) 
   return (
     <>
       <Card className="p-6 shadow-card">
-        <h3 className="text-xl font-semibold mb-4 text-foreground">Recent Expenses 📝</h3>
-        <div className="space-y-3 max-h-[400px] overflow-y-auto">
-          {expenses.map((expense) => (
-            <div
-              key={expense.id}
-              className="flex items-center gap-3 p-4 rounded-lg bg-muted/50 border border-border hover:bg-muted/70 transition-colors"
-            >
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-2xl">{getCategoryEmoji(expense.category)}</span>
-                  <span className="font-semibold text-foreground">${expense.amount.toFixed(2)}</span>
-                  <span className="text-sm text-muted-foreground">•</span>
-                  <span className="text-sm text-muted-foreground">{expense.category}</span>
-                  <span className="text-xl">{getMoodEmoji(expense.mood)}</span>
-                </div>
-                {expense.note && (
-                  <p className="text-sm text-muted-foreground italic">"{expense.note}"</p>
-                )}
-                <p className="text-xs text-muted-foreground mt-1">
-                  {new Date(expense.date).toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                </p>
-              </div>
-              <div className="flex gap-2">
-                {expense.receipt_url && (
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <Receipt className="w-4 h-4" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-2">
-                      <img 
-                        src={expense.receipt_url} 
-                        alt="Receipt" 
-                        className="max-w-sm max-h-96 rounded"
-                      />
-                    </PopoverContent>
-                  </Popover>
-                )}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleEdit(expense)}
-                >
-                  <Edit className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => onDelete(expense.id)}
-                  className="text-destructive hover:text-destructive"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-          ))}
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xl font-semibold text-foreground">Recent Expenses 📝</h3>
+          <DataExport expenses={filteredExpenses} />
         </div>
+        
+        <ExpenseFilters 
+          onFilterChange={setFilters}
+          onReset={() => setFilters({})}
+        />
+
+        {filteredExpenses.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground">
+            {expenses.length === 0 ? 'No expenses yet. Add your first expense! 🌱' : 'No expenses match your filters'}
+          </div>
+        ) : (
+          <div className="space-y-3 max-h-[400px] overflow-y-auto mt-4">
+            {filteredExpenses.map((expense) => (
+              <div
+                key={expense.id}
+                className="flex items-center gap-3 p-4 rounded-lg bg-muted/50 border border-border hover:bg-muted/70 transition-colors"
+              >
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-2xl">{getCategoryEmoji(expense.category)}</span>
+                    <span className="font-semibold text-foreground">${expense.amount.toFixed(2)}</span>
+                    <span className="text-sm text-muted-foreground">•</span>
+                    <span className="text-sm text-muted-foreground">{expense.category}</span>
+                    <span className="text-xl">{getMoodEmoji(expense.mood)}</span>
+                  </div>
+                  {expense.note && (
+                    <p className="text-sm text-muted-foreground italic">"{expense.note}"</p>
+                  )}
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {new Date(expense.date).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  {expense.receipt_url && (
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <Receipt className="w-4 h-4" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-2">
+                        <img 
+                          src={expense.receipt_url} 
+                          alt="Receipt" 
+                          className="max-w-sm max-h-96 rounded"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleEdit(expense)}
+                  >
+                    <Edit className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => onDelete(expense.id)}
+                    className="text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </Card>
 
       <Dialog open={!!editingExpense} onOpenChange={() => setEditingExpense(null)}>

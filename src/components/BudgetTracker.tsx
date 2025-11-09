@@ -154,7 +154,16 @@ export const BudgetTracker = ({
               </span>
             </div>
 
-            <Progress value={Math.min(percentUsed, 100)} className="h-3" />
+            <Progress 
+              value={Math.min(percentUsed, 100)} 
+              className={`h-3 ${
+                percentUsed >= 100 
+                  ? '[&>div]:bg-destructive' 
+                  : percentUsed >= 80 
+                  ? '[&>div]:bg-orange-500' 
+                  : ''
+              }`}
+            />
 
             {percentUsed > 90 && (
               <div className={`text-sm p-3 rounded-lg ${
@@ -202,10 +211,16 @@ export const BudgetTracker = ({
                             ${spent.toFixed(0)} / ${budget > 0 ? budget.toFixed(0) : '0'}
                           </span>
                         </div>
-                        {budget > 0 && (
+                         {budget > 0 && (
                           <Progress 
                             value={Math.min(percent, 100)} 
-                            className="h-1.5"
+                            className={`h-1.5 ${
+                              percent >= 100 
+                                ? '[&>div]:bg-destructive' 
+                                : percent >= 80 
+                                ? '[&>div]:bg-orange-500' 
+                                : ''
+                            }`}
                           />
                         )}
                       </div>

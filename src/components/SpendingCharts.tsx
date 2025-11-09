@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Expense } from '@/hooks/useExpenses';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
@@ -15,6 +16,8 @@ const COLORS = {
 };
 
 export const SpendingCharts = ({ expenses }: SpendingChartsProps) => {
+  const [hiddenCategories, setHiddenCategories] = useState<Set<string>>(new Set());
+
   // Category data
   const categoryData = Object.entries(
     expenses.reduce((acc, exp) => {
@@ -22,6 +25,20 @@ export const SpendingCharts = ({ expenses }: SpendingChartsProps) => {
       return acc;
     }, {} as Record<string, number>)
   ).map(([name, value]) => ({ name, value }));
+
+  const visibleCategoryData = categoryData.filter(item => !hiddenCategories.has(item.name));
+
+  const handleLegendClick = (category: string) => {
+    setHiddenCategories(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(category)) {
+        newSet.delete(category);
+      } else {
+        newSet.add(category);
+      }
+      return newSet;
+    });
+  };
 
   // Daily spending for last 7 days
   const last7Days = Array.from({ length: 7 }, (_, i) => {
@@ -49,7 +66,7 @@ export const SpendingCharts = ({ expenses }: SpendingChartsProps) => {
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
-                data={categoryData}
+                data={visibleCategoryData}
                 cx="50%"
                 cy="50%"
                 labelLine={false}
@@ -58,12 +75,23 @@ export const SpendingCharts = ({ expenses }: SpendingChartsProps) => {
                 fill="#8884d8"
                 dataKey="value"
               >
-                {categoryData.map((entry) => (
+                {visibleCategoryData.map((entry) => (
                   <Cell key={entry.name} fill={COLORS[entry.name as keyof typeof COLORS]} />
                 ))}
               </Pie>
               <Tooltip />
-              <Legend />
+              <Legend 
+                onClick={(e) => handleLegendClick(e.value)}
+                wrapperStyle={{ cursor: 'pointer' }}
+                formatter={(value) => (
+                  <span style={{ 
+                    textDecoration: hiddenCategories.has(value) ? 'line-through' : 'none',
+                    opacity: hiddenCategories.has(value) ? 0.5 : 1 
+                  }}>
+                    {value}
+                  </span>
+                )}
+              />
             </PieChart>
           </ResponsiveContainer>
         ) : (
