@@ -12,20 +12,11 @@ import { InsightsPanel } from '@/components/InsightsPanel';
 import { BudgetTracker } from '@/components/BudgetTracker';
 import { ExpenseList } from '@/components/ExpenseList';
 import { MotivationBanner } from '@/components/MotivationBanner';
-import { NotificationSettings } from '@/components/NotificationSettings';
 import { SavingsGoals } from '@/components/SavingsGoals';
 import { SampleDataGenerator } from '@/components/SampleDataGenerator';
 import { toast } from '@/hooks/use-toast';
-import { Wallet, LogOut, Bell } from 'lucide-react';
+import { Wallet, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useState as useNotificationDialog } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -102,11 +93,6 @@ const Index = () => {
     window.location.reload();
   };
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate('/auth');
-  };
-
   return (
     <div className="min-h-screen bg-gradient-calm">
       {/* Header */}
@@ -124,23 +110,14 @@ const Index = () => {
             </div>
             <div className="flex items-center gap-2">
               <SampleDataGenerator onGenerated={handleSampleDataGenerated} />
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="ghost" size="sm">
-                    <Bell className="w-4 h-4 mr-2" />
-                    Notifications
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Notification Settings</DialogTitle>
-                  </DialogHeader>
-                  <NotificationSettings />
-                </DialogContent>
-              </Dialog>
-              <Button variant="ghost" size="sm" onClick={handleLogout}>
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => navigate('/profile')}
+                className="gap-2"
+              >
+                <User className="w-4 h-4" />
+                Profile
               </Button>
             </div>
           </div>
